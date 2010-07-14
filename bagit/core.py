@@ -377,6 +377,11 @@ class Bag(object):
                 (alg, h.copy()) for alg, h in hashers.items() if alg in hashes
             )
 
+            if not f_hashers:
+                # TODO: Should this raise an error?
+                logging.warning("%s: Unable to validate %s: no supported hash algorithms in %s", self, rel_path, hashes)
+                continue
+
             try:
                 f_hashes = self._calculate_file_hashes(full_path, hashers)
             except:
