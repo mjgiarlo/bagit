@@ -33,6 +33,7 @@ import logging
 import os
 import hashlib
 
+
 def load_tag_file(tag_file_name):
     tag_file = open(tag_file_name, "r")
 
@@ -40,6 +41,7 @@ def load_tag_file(tag_file_name):
         return dict(parse_tags(tag_file))
     finally:
         tag_file.close()
+
 
 def parse_tags(file):
     """Parses a tag file, according to RFC 2822.  This
@@ -80,8 +82,10 @@ def parse_tags(file):
 class BagError(Exception):
     pass
 
+
 class BagValidationError(BagError):
     pass
+
 
 class Bag(object):
     """A representation of a bag."""
@@ -93,7 +97,9 @@ class Bag(object):
 
     tag_file_name = None
 
-    #: This list is used during validation to detect extra files in the top-level bag directory. Note that it will be extended to include the manifest and
+    #: This list is used during validation to detect extra files in the
+    #: top-level bag directory. Note that it will be extended to include the
+    #: manifest file(s) as detected
     valid_files = ["bagit.txt", "fetch.txt"]
     valid_directories = ['data']
 
@@ -166,7 +172,8 @@ class Bag(object):
                     line = line.strip()
 
                     # Ignore blank lines and comments.
-                    if line == "" or line.startswith("#"): continue
+                    if line == "" or line.startswith("#"):
+                        continue
 
                     entry = line.split(None, 1)
 
@@ -178,8 +185,8 @@ class Bag(object):
                     entry_hash = entry[0]
                     entry_path = os.path.normpath(entry[1].lstrip("*"))
 
-                    if self.entries.has_key(entry_path):
-                        if self.entries[entry_path].has_key(alg):
+                    if entry_path in self.entries:
+                        if alg in self.entries[entry_path]:
                             logging.warning("%s: Duplicate %s manifest entry: %s", self, alg, entry_path)
 
                         self.entries[entry_path][alg] = entry_hash
@@ -248,7 +255,7 @@ class Bag(object):
             yield url
 
     def has_oxum(self):
-        return self.tags.has_key('Payload-Oxum')
+        return 'Payload-Oxum' in self.tags
 
     def validate(self):
         self.validate_structure()
@@ -328,7 +335,8 @@ class Bag(object):
            another check (a poor person's checksum) for accurate receipt of a bag.
         """
         oxum = self.tags.get('Payload-Oxum')
-        if oxum == None: return
+        if oxum == None:
+            return
 
         byte_count, file_count = oxum.split('.', 1)
 
@@ -346,7 +354,10 @@ class Bag(object):
             total_files += 1
 
         if file_count != total_files or byte_count != total_bytes:
-            raise BagError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
+            raise BagError(
+                "Oxum validation failed: found %s files comprising %s bytes; expected %s files and %s bytes." %
+                (total_files, total_bytes, file_count, byte_count)
+            )
 
     def validate_entries(self):
         """
@@ -412,7 +423,7 @@ class Bag(object):
 
         while f.tell() < f_size:
             block = f.read(1048576)
-            [ i.update(block) for i in f_hashers.values() ]
+            [i.update(block) for i in f_hashers.values()]
         f.close()
 
         return dict(
